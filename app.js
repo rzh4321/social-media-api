@@ -11,6 +11,8 @@ const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
 const apiRouter = require('./routes/api');
 const authRouter = require('./routes/auth');
+const authuserRouter = require('./routes/authuser');
+const postsRouter = require('./routes/posts');
 
 require('dotenv').config();
 
@@ -48,6 +50,9 @@ app.use('/api', apiRouter);
 
 app.use('/api/users', usersRouter);
 app.use('/api/auth', authRouter);
+app.use('/api/authuser', authuserRouter);
+app.use('/api/posts', postsRouter);
+
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
