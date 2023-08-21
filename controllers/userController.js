@@ -84,7 +84,7 @@ exports.sendFriendRequest = async (req, res, next) => {
 // GET list of friends given userid
 exports.getFriends = async (req, res, next) => {
     try {
-        const user = User.findById(req.params.id);
+        const user = await User.findById(req.params.userid);
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
@@ -99,13 +99,13 @@ exports.getFriends = async (req, res, next) => {
 
 // Accept a friend request from another user given their userid (POST)
 exports.acceptFriendRequest = async (req, res, next) => {
-    // Check that the currentUser is logged in
+    // Check that the user is logged in
     if (!req.user) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
   
     try {
-      // Find the currentUser
+      // Find the user
       const user = await User.findById(req.user.id);
       if (!user) {
         return res.status(404).json({ message: 'User not found' });

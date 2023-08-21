@@ -8,6 +8,9 @@ router.get('/', user_controller.getUsers);
 // GET a single user with userid
 router.get('/:userid', user_controller.getUser);
 
+// GET list of friends
+router.get('/:userid/friends', user_controller.getFriends);
+
 // POST friend request from current user to another user by userid
 router.post('/send-friend-request/:userid', user_controller.sendFriendRequest);
 
