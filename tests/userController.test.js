@@ -35,14 +35,6 @@ beforeAll(async () => {
   await initializeMongoServer();
   // Save test users to database
   for (let user of users) {
-    // try {
-    //   const hashed = await bcrypt.hash(user.password, 10);
-    //   user.password = hashed;
-    //   await user.save();
-    // }
-    // catch(err) {
-    //   console.error(err);
-    // }
     const res = await request(app)
       .post("/api/auth/signup")
       .send(user)

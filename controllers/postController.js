@@ -13,3 +13,18 @@ exports.getPosts = async (req, res, next) => {
         });
       });
   }
+
+  exports.getAPost = async (req, res, next) => {
+    try {
+      const post = await Post.findById(req.params.postid)
+        .populate('user');
+      if (!post) {
+        return res.status(404).json({ message: 'Post not found' });
+      }
+    }
+    catch(err) {
+      res.status(502).json({
+        error: err,
+      });
+    }
+  };

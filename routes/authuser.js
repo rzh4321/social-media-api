@@ -4,9 +4,9 @@ const router = express.Router();
 const authuserController = require('../controllers/authuserController');
 
 // POST a new post by the authenticated user
-router.post('/posts', authuserController.post_a_post);
+router.post('/posts', authuserController.postApost);
 
 // GET a list of posts by the authenticated user
-router.get('/posts', authuserController.get_posts);
+router.get('/posts', authuserController.getPosts);
 
 module.exports = router;

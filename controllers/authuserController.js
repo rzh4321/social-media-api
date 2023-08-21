@@ -3,13 +3,14 @@ const Post = require('../models/post');
 const mongoose = require('mongoose');
 const { body, validationResult } = require('express-validator');
 
+// post a post
 exports.postApost = [
     // check if logged in
     async (req, res, next) => {
         if (!req.user) {
             return res.status(401).json({ message: "Unauthorized" });
         }
-        // Find and check currentUser by req.user._id
+        // Find and check currentUser by req.user.id
         const currentUser = await User.findById(req.user.id);
         if (!currentUser) {
           return res.status(404).json({ message: 'User not found' });
@@ -58,6 +59,7 @@ exports.postApost = [
     }
 ];
 
+// get all posts by user
 exports.getPosts = async (req, res, next) => {
     // Check that the user is logged in
     if (!req.user) {
