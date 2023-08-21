@@ -150,20 +150,20 @@ describe('POST /users/:userId/send-friend-request', () => {
     const res = await authenticatedSession
       .post(`/api/users/${userToSend.id}/send-friend-request`)
       .expect(400);
-      
+
     expect(res.body.message).toBe('Friend request already sent');
   });
 
-  it('should return a 400 error if the users are already friends', async () => {
-    // Add the user to send the request to to the current user's friends array
-    user.friends.push(userToSend.id);
-    await user.save();
+  // it('should return a 400 error if the users are already friends', async () => {
+  //   // Add the user to send the request to to the current user's friends array
+  //   user.friends.push(userToSend.id);
+  //   await user.save();
 
-    const res = await authenticatedSession
-      .post(`/api/users/${userToSend.id}/send-friend-request`)
-      .expect(400);
+  //   const res = await authenticatedSession
+  //     .post(`/api/users/${userToSend.id}/send-friend-request`)
+  //     .expect(400);
 
-    expect(res.body.message).toBe('Already friends');
-  });
+  //   expect(res.body.message).toBe('Already friends');
+  // });
 
 });

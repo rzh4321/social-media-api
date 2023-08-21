@@ -46,7 +46,7 @@ passport.deserializeUser((user, done) => {
 });
 
 exports.userSignup = asyncHandler(async (req, res, next) => {
-  const user = User.findOne({ username: req.body.username });
+  const user = await User.findOne({ username: req.body.username });
   if (user) {
     return res.status(400).json({ message: "Username is taken" });
   }
