@@ -7,8 +7,8 @@ const mongoose = require('mongoose');
 const session = require('express-session');
 const passport = require('passport');
 
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
+const indexRouter = require('./routes/index');
+const usersRouter = require('./routes/users');
 const apiRouter = require('./routes/api');
 const authRouter = require('./routes/auth');
 
@@ -44,8 +44,9 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
-app.use('/users', usersRouter);
 app.use('/api', apiRouter);
+
+app.use('/api/users', usersRouter);
 app.use('/api/auth', authRouter);
 
 // catch 404 and forward to error handler
