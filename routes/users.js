@@ -9,6 +9,9 @@ router.get('/', user_controller.getUsers);
 router.get('/:userid', user_controller.getUser);
 
 // POST friend request from current user to another user by userid
-router.post('/:userid/send-friend-request', user_controller.sendFriendRequest);
+router.post('/send-friend-request/:userid', user_controller.sendFriendRequest);
+
+router.post('/accept-friend-request/:userid', user_controller.acceptFriendRequest);
+
 
 module.exports = router;

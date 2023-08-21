@@ -10,35 +10,40 @@ const { use } = require('passport');
 
 // Create some test users
 let users = [
-  new User({
+  {
     name: 'Ricky',
     username: 'ricky@example.com',
     password: 'password123'
-  }),
-  new User({
+  },
+  {
     name: 'Bob',
     username: 'bob@example.com',
     password: 'password123'
-  }),
-  new User({
+  },
+  {
     name: 'Tom',
     username: 'tom@example.com',
     password: 'password123'
-  }),
+  },
 ];
 
 beforeAll(async () => {
   await initializeMongoServer();
   // Save test users to database
   for (let user of users) {
-    try {
-      const hashed = await bcrypt.hash(user.password, 10);
-      user.password = hashed;
-      await user.save();
-    }
-    catch(err) {
-      console.error(err);
-    }
+    // try {
+    //   const hashed = await bcrypt.hash(user.password, 10);
+    //   user.password = hashed;
+    //   await user.save();
+    // }
+    // catch(err) {
+    //   console.error(err);
+    // }
+    const res = await request(app)
+      .post('/api/auth/signup')
+      .send(user)
+      .expect(201)
+    user.id = res.body._id;
   }
 });
 
@@ -64,7 +69,7 @@ describe('GET /api/users', () => {
 describe('GET /api/users/:userid', () => {
   it('should return a single user', async () => {
     const res = await request(app)
-      .get('/api/users/' + users[0]._id)
+      .get('/api/users/' + users[0].id)
       .expect(200);
 
     // Check that the response body contains the test user
@@ -110,8 +115,8 @@ describe('POST /users/:userId/send-friend-request', () => {
     // const res = await request(app)
     //   .post(`/api/users/${userToSend._id}/send-friend-request`)
     //   .expect(401);
-    const res = await authenticatedSession
-      .post(`/api/users/${userToSend._id}/send-friend-request`)
+    await authenticatedSession
+      .post(`/api/users/send-friend-request/${userToSend.id}`)
       .expect(401);
   });
 
@@ -122,48 +127,52 @@ describe('POST /users/:userId/send-friend-request', () => {
     //     username: 'ricky@example.com',
     //     password: 'password123',
     //   });
-    // const res = await request(app)
-    //   .post(`/api/users/${userToSend._id}/send-friend-request`)
-    //   .expect(200);
-
-    // // Check that the friend request was sent successfully
-    // expect(res.body.currentUser.friend_requests_sent).toContainEqual(userToSend._id);
-    // expect(res.body.userToSend.friend_requests_received).toContainEqual(currentUser._id);
     const res = await authenticatedSession
-      .post(`/api/users/${userToSend._id}/send-friend-request`)
+      .post(`/api/users/send-friend-request/${userToSend.id}`)
       .expect(200);
+
+    // Check that the friend request was sent successfully
+    expect(res.body.currentUser.friendRequestsSent).toContainEqual(userToSend.id);
+    expect(res.body.userToSend.friendRequestsReceived).toContainEqual(user.id);
   });
 
   it('should return a 404 error if the user to send the friend request to is not found', async () => {
     const res = await authenticatedSession
-      .post(`/api/users/999999999999/send-friend-request`)
+      .post(`/api/users/send-friend-request/999999999999`)
       .expect(404);
 
     expect(res.body.message).toBe('User not found');
   });
 
   it('should return a 400 error if a friend request has already been sent', async () => {
+    const currentUser = await User.findById(user.id);
     // Add the user to send the request to to the current user's friend requests sent array
-    user.friendRequestsSent.push(userToSend.id);
-    await user.save();
+    currentUser.friendRequestsSent.push(userToSend.id);
+    await currentUser.save();
 
     const res = await authenticatedSession
-      .post(`/api/users/${userToSend.id}/send-friend-request`)
+      .post(`/api/users/send-friend-request/${userToSend.id}`)
       .expect(400);
+
+    currentUser.friendRequestsSent = [];
+    await currentUser.save();
+    console.log(currentUser.friendRequestsSent)
 
     expect(res.body.message).toBe('Friend request already sent');
   });
 
-  // it('should return a 400 error if the users are already friends', async () => {
-  //   // Add the user to send the request to to the current user's friends array
-  //   user.friends.push(userToSend.id);
-  //   await user.save();
+  it('should return a 400 error if the users are already friends', async () => {
+    const currentUser = await User.findById(user.id);
+    // currentUser.friendRequestsSent.pop();
+    // Add the user to send the request to to the current user's friends array
+    currentUser.friends.push(userToSend.id);
+    await currentUser.save();
 
-  //   const res = await authenticatedSession
-  //     .post(`/api/users/${userToSend.id}/send-friend-request`)
-  //     .expect(400);
+    const res = await authenticatedSession
+      .post(`/api/users/send-friend-request/${userToSend.id}`)
+      .expect(400);
 
-  //   expect(res.body.message).toBe('Already friends');
-  // });
+    expect(res.body.message).toBe('Already friends');
+  });
 
 });
