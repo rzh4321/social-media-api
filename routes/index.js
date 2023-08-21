@@ -9,7 +9,7 @@ router.get('/', function(req, res, next) {
 // GET protected page
 router.get('/protected', 
   function(req, res, next) {
-    if (req.isAuthenticated()) {
+    if (req.user) {
       res.send('protected page shown');
     } else {
       res.status(401).send('Unauthorized');
