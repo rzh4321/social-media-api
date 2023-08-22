@@ -1,6 +1,7 @@
 const User = require('../models/user');
 const Post = require('../models/post');
 const Comment = require('../models/comment');
+const Like = require('../models/like');
 const mongoose = require('mongoose');
 const { body, validationResult } = require('express-validator');
 
@@ -203,9 +204,16 @@ exports.giveLike = async (req, res, next) => {
       return res.status(400).json({ message: 'Already liked' });
     }
 
+    const newLike = new Like({
+      user: new mongoose.Types.ObjectId(req.user.id),
+      post: new mongoose.Types.ObjectId(req.params.postid),
+    })
+    await newLike.save();
     // Add the user to the post's likes array
-    post.likes.push(user.id);
+    post.likes.push(newLike);
     await post.save();
+    post.populate('likes')
+    console.log(post);
     return res.status(200).json({ 
       message: 'Like added',
       post
