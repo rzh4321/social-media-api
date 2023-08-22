@@ -5,8 +5,7 @@ const asyncHandler = require('express-async-handler');
 exports.getUsers = async (req, res, next) => {
     try {
         const users = await User.find();
-        console.log(users);
-        res.status(200).json(users);
+        res.status(200).json({users});
     }
     catch(err) {
         res.status(502).json({
@@ -22,7 +21,7 @@ exports.getUser = async (req, res, next) => {
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
-        res.status(200).json(user);
+        res.status(200).json({user});
     }
     catch(err) {
         res.status(502).json({
@@ -39,7 +38,7 @@ exports.getFriends = async (req, res, next) => {
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
-        res.status(200).json(user.friends);
+        res.status(200).json({friends: user.friends});
     }
     catch(err) {
         res.status(502).json({
