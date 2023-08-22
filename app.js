@@ -6,6 +6,7 @@ var logger = require('morgan');
 const mongoose = require('mongoose');
 const session = require('express-session');
 const passport = require('passport');
+const cors = require('cors');
 
 const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
@@ -25,6 +26,11 @@ async function main() {
 main().catch(console.error)
 
 var app = express();
+
+// Only allow requests from frontend
+// app.use(cors({
+//   origin: 'http://localhost:3000',
+// }));
 
 // set up passport session
 app.use(session({
