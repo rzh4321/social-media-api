@@ -177,3 +177,42 @@ exports.acceptFriendRequest = async (req, res, next) => {
       });
     }
 }
+
+exports.giveLike = async (req, res, next) => {
+  // Check that the user is logged in
+  if (!req.user) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  try {
+    // Find user
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Find the post by req.params.postid
+    const post = await Post.findById(req.params.postid);
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    // Check if the user has already liked this post
+    if (post.likes.includes(req.user.id)) {
+      return res.status(400).json({ message: 'Already liked' });
+    }
+
+    // Add the user to the post's likes array
+    post.likes.push(user.id);
+    await post.save();
+    return res.status(200).json({ 
+      message: 'Like added',
+      post
+    });
+
+  } catch (err) {
+    res.status(502).json({
+      error: err,
+    });
+  }
+}
