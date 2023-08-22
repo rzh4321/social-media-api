@@ -1,20 +1,19 @@
 var express = require('express');
 var router = express.Router();
-const user_controller = require('../controllers/userController');
+const userController = require('../controllers/userController');
 
 // GET list of users
-router.get('/', user_controller.getUsers);
+router.get('/', userController.getUsers);
 
 // GET a single user with userid
-router.get('/:userid', user_controller.getUser);
+router.get('/:userid', userController.getUser);
 
 // GET list of friends
-router.get('/:userid/friends', user_controller.getFriends);
+router.get('/:userid/friends', userController.getFriends);
 
-// POST friend request from current user to another user by userid
-router.post('/send-friend-request/:userid', user_controller.sendFriendRequest);
+// GET a list of posts made by the user with userid
+router.get('/:userid/posts', userController.getPosts);
 
-router.post('/accept-friend-request/:userid', user_controller.acceptFriendRequest);
 
 
 module.exports = router;

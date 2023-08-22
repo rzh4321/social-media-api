@@ -21,6 +21,7 @@ exports.getPosts = async (req, res, next) => {
       if (!post) {
         return res.status(404).json({ message: 'Post not found' });
       }
+      res.status(200).json({ post });
     }
     catch(err) {
       res.status(502).json({
