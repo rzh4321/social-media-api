@@ -360,7 +360,7 @@ describe("POST /api/authuser/send-friend-request/:userId", () => {
     });
   });
 
-  describe.("POST /api/authuser/posts/:postid/give-like", () => {
+  describe("POST /api/authuser/posts/:postid/give-like", () => {
     const user = users[0]; // Ricky
   
     let testSession = null;
@@ -434,5 +434,95 @@ describe("POST /api/authuser/send-friend-request/:userId", () => {
       .expect(400);
     expect(res.body.message).toBe('Already liked');
   });
+
+});
+
+describe.only("POST /api/authuser/posts/:postid/comments", () => {
+  const user = users[0]; // Ricky
+
+  let testSession = null;
+
+  beforeEach(async () => {
+    testSession = session(app);
+    await testSession
+      .post("/api/auth/login")
+      .send({
+        username: user.username,
+        password: user.password,
+      })
+      .expect(200);
+      // Ricky makes a post
+      await testSession
+      .post('/api/authuser/posts')
+      .send(mockPost)
+      .then(res => {
+        mockPost.id = res.body.post._id;
+      });
+  });
+
+  it('should return a 401 error if the user is not logged in', async () => {
+    await testSession.post('/api/auth/logout').expect(200);
+    const res = await testSession
+      .post(`/api/authuser/posts/${mockPost.id}/comments`)
+      .expect(401);
+    expect(res.body.message).toBe('Unauthorized');
+  });
+
+  it('should return a 404 error if the user is not found', async () => {
+    // Delete Ricky from DB
+    await User.findByIdAndDelete(user.id);
+    const res = await testSession
+      .post(`/api/authuser/posts/${mockPost.id}/comments`)
+      .expect(404);
+    // Add Ricky back to DB
+      const signUpRes = await request(app)
+          .post("/api/auth/signup")
+          .send(user)
+          .expect(201);
+        user.id = signUpRes.body._id;
+    expect(res.body.message).toBe('User not found');
+  });
+
+  it('should return a 404 error if the post is not found', async () => {
+    // Delete mockPost from DB
+    await Post.findByIdAndDelete(mockPost.id);
+    const res = await testSession
+      .post(`/api/authuser/posts/${mockPost.id}/comments`)
+      .expect(404);
+    expect(res.body.message).toBe('Post not found');
+  });
+
+  it('should post a comment', async () => {
+    let res = await testSession
+      .post(`/api/authuser/posts/${mockPost.id}/comments`)
+      .send(mockComment)
+      .expect(201);
+    mockComment.id = res.body.comment._id;
+    expect(res.body.comment.content).toBe(mockComment.content);
+    expect(res.body.comment._id).toBe(mockComment.id.toString());
+    expect(res.body.post._id).toBe(mockPost.id.toString());
+    // Log in as Bob and Bob posts a comment to the post
+    await testSession.post(`/api/auth/login`).send({
+      username: users[1].username,
+      password: users[1].password,
+    });
+    res = await testSession
+      .post(`/api/authuser/posts/${mockPost.id}/comments`)
+      .send({ content: 'This is a comment by Bob' })
+      .expect(201);
+    expect(res.body.comment.content).toBe('This is a comment by Bob');
+    expect(res.body.comment.user).toBe(users[1].id.toString());
+    expect(res.body.post._id).toBe(mockPost.id.toString());
+    expect(res.body.post.comments).toHaveLength(2);
+  });
+
+  it('should reject comment with invalid content', async () => {
+    const res = await testSession
+      .post(`/api/authuser/posts/${mockPost.id}/comments`)
+      .send({ content: ' ' })
+      .expect(400);
+    expect(res.body.errors[0].path).toBe('content');
+    expect(res.body.errors[0].msg).toBe('Content is required');
+  })
 
 });

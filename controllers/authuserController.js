@@ -1,5 +1,6 @@
 const User = require('../models/user');
 const Post = require('../models/post');
+const Comment = require('../models/comment');
 const mongoose = require('mongoose');
 const { body, validationResult } = require('express-validator');
 
@@ -216,3 +217,65 @@ exports.giveLike = async (req, res, next) => {
     });
   }
 }
+
+exports.postAComment = [
+  // Check that the user is logged in
+  async (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    // Find the user by req.user.id
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    // Find the post by req.params.postid
+    const post = await Post.findById(req.params.postid);
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+    next();
+  },
+
+  // Validate and sanitize the comment data
+  body('content', 'Content is required')
+    .trim().isLength({ min: 1 }).escape(),
+
+  // Process after validation and sanitization
+  async (req, res, next) => {
+    // Extract the validation errors from a request
+    const errors = validationResult(req);
+
+    // Create a Comment object with escaped and trimmed data
+    const comment = new Comment({
+      content: req.body.content,
+      user: new mongoose.Types.ObjectId(req.user.id),
+      post: new mongoose.Types.ObjectId(req.params.postid),
+    });
+
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        errors: errors.array(),
+        comment
+      });
+    } else {
+      // Data is valid
+      try {
+        // Save comment to database
+        await comment.save();
+        // Reference the comment in the post
+        const post = await Post.findById(req.params.postid);
+        post.comments.push(comment);
+        await post.save();
+        res.status(201).json({
+          post,
+          comment
+        });
+      } catch (err) {
+        res.status(502).json({
+          error: err,
+        });
+      }
+    }
+  }
+];

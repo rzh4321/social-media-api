@@ -18,5 +18,9 @@ router.post('/accept-friend-request/:userid', authuserController.acceptFriendReq
 // POST a like to a post given its postid
 router.post('/posts/:postid/give-like', authuserController.giveLike);
 
+// POST a comment to a post given its postid
+router.post('/posts/:postid/comments', authuserController.postAComment);
+
+
 
 module.exports = router;

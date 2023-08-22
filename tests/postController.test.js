@@ -81,3 +81,44 @@ beforeAll(async () => {
       });
 
   });
+
+  describe.only('GET /api/posts', () => {
+    let user = users[0]; // Ricky
+    let testSession = null;
+  
+    beforeEach(async () => {
+        // Log in as Ricky
+        testSession = session(app);
+        await testSession.post('/api/auth/login').send({
+          username: user.username,
+          password: user.password,
+        })
+        .expect(200);
+    });
+  
+    it('should return a empty array if no posts are found', async () => {
+      const res = await testSession
+        .get('/api/posts')
+        .expect(200);
+      expect(res.body.posts).toHaveLength(0);
+    });
+
+    it('should return a list of posts in correct order', async () => {
+      // Ricky makes some posts
+      let res = await testSession
+        .post('/api/authuser/posts').send(mockPost).expect(201);
+      await testSession
+        .post('/api/authuser/posts').send({ content: 'Second post'}).expect(201);
+      await testSession
+        .post('/api/authuser/posts').send({ content: 'Third post'}).expect(201);
+      // Get the post
+      res = await testSession
+        .get('/api/posts')
+        .expect(200);
+      expect(res.body.posts).toHaveLength(3);
+      expect(res.body.posts[2].content).toBe(mockPost.content);
+      expect(res.body.posts[1].content).toBe('Second post');
+      expect(res.body.posts[0].content).toBe('Third post');
+    })
+
+  });
