@@ -377,3 +377,59 @@ exports.getFriendsPosts = [
 
   }
 ];
+
+exports.editProfile = [
+  // Add jwt authentication to the request
+  passport.authenticate('jwt', { session: false }),
+
+  // Check that the user is logged in
+  async (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    // Find the user by req.user.id
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    next();
+  },
+
+  // Validate and sanitize the comment data
+  body('name', 'Name is required')
+    .trim().isLength({ min: 1 }).escape(),
+  body('profilePicUrl', 'Profile picture is required')
+    .trim().isURL(),
+
+  // Process after validation and sanitization
+  async (req, res, next) => {
+    // Extract the validation errors from a request
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        errors: errors.array(),
+      });
+    } else {
+      // Data is valid
+      try {
+        // Update the user's profile
+        const user = await User.findByIdAndUpdate(
+          req.user.id,
+          {
+            name: req.body.name,
+            profileUrl: req.body.profilePicUrl
+          }
+        );
+        res.status(200).json({
+          user,
+        });
+      } catch (err) {
+        res.status(502).json({
+          error: err,
+        });
+      }
+    }
+  }
+
+];

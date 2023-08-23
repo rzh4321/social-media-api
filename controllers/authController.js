@@ -172,3 +172,36 @@ exports.userLogout = (req, res, next) => {
     res.status(200).json({ message: "Logged out" });
   });
 };
+
+exports.oauthLogin = [
+  asyncHandler(async (req, res, next) => {
+    // see if user already has an account
+    const user = await User.findOne({ username: req.body.username });
+    if (user) {
+      const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET);
+      return res.status(200).json({
+        message: 'logged in',
+        user: user,
+        token
+      })
+    }
+    // try to create one in next middleware
+    next();
+  }),
+
+asyncHandler(async (req, res, next) => {
+  const user = new User({
+    name: req.body.name,
+    username: req.body.username,
+    profileUrl: req.body.profilePicUrl,
+  });
+  await user.save();
+  const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET);
+          return res.status(200).json({
+            message: 'logged in',
+            user: user,
+            token
+          });
+})
+
+];

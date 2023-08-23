@@ -9,4 +9,7 @@ router.post('/login', authController.userLogin);
 
 router.post('/logout', authController.userLogout);
 
+// POST login route for oauth login authentication
+router.post('/oauth-login', authController.oauthLogin);
+
 module.exports = router;

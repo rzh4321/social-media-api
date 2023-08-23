@@ -24,6 +24,9 @@ router.post('/posts/:postid/comments', authuserController.postAComment);
 // GET a list of posts by the authenticated user's friends
 router.get('/friends-posts', authuserController.getFriendsPosts);
 
+// PUT for the authenticated user to edit its profile name and image
+router.put('/edit-profile', authuserController.editProfile);
+
 
 
 module.exports = router;
