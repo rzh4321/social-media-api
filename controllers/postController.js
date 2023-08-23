@@ -7,7 +7,15 @@ const { response } = require('../app');
 // Return a list of all posts sorted by timestamp
   exports.getPosts = async (req, res, next) => {
     try {
-      const posts = await Post.find().sort({ timestamp: -1 });
+      const posts = await Post.find()
+        .sort({ timestamp: -1 })
+        .populate('user')
+        .populate({
+          path: 'comments',
+          populate: {
+            path: 'user',
+          }
+        });
       res.status(200).json({posts});
     }
     catch(err) {

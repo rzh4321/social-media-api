@@ -3,6 +3,12 @@ const bcrypt = require("bcryptjs");
 const passport = require("passport");
 const LocalStrategy = require("passport-local");
 const asyncHandler = require("express-async-handler");
+const JwtStrategy = require('passport-jwt').Strategy,
+      ExtractJwt = require('passport-jwt').ExtractJwt;
+const jwt = require('jsonwebtoken');
+const { validationResult, body } = require('express-validator');
+require('dotenv').config();
+
 
 passport.use(
   new LocalStrategy(
@@ -30,6 +36,28 @@ passport.use(
   ),
 );
 
+// Passport JWT strategy setup
+const opts = {
+  jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+  secretOrKey: process.env.JWT_SECRET,
+};
+
+passport.use(new JwtStrategy(opts, async function(jwt_payload, done) {
+  try {
+    const user = await User.findById(jwt_payload.id);
+    if (user) {
+      return done(null, user);
+    }
+    else {
+      return done(null, false);
+    }
+  }
+  catch(err) {
+    done(err, false);
+  }
+}));
+
+
 passport.serializeUser((user, done) => {
   process.nextTick(() => {
     done(null, {
@@ -45,28 +73,82 @@ passport.deserializeUser((user, done) => {
   });
 });
 
-exports.userSignup = asyncHandler(async (req, res, next) => {
-  const user = await User.findOne({ username: req.body.username });
-  if (user) {
-    return res.status(400).json({ message: "Username is taken" });
-  }
-  bcrypt.hash(req.body.password, 10, async (err, hashed) => {
-    if (err) {
-      return next(err);
-    }
-    try {
-      const newUser = new User({
-        name: req.body.name,
-        username: req.body.username,
-        password: hashed,
+// exports.userSignup = asyncHandler(async (req, res, next) => {
+//   const user = await User.findOne({ username: req.body.username });
+//   if (user) {
+//     return res.status(400).json({ message: "Username is taken" });
+//   }
+//   bcrypt.hash(req.body.password, 10, async (err, hashed) => {
+//     if (err) {
+//       return next(err);
+//     }
+//     try {
+//       const newUser = new User({
+//         name: req.body.name,
+//         username: req.body.username,
+//         password: hashed,
+//       });
+//       const result = await newUser.save();
+//       res.status(201).json(result);
+//     } catch {
+//       return next(err);
+//     }
+//   });
+// });
+
+exports.userSignup = [
+  // Validate and sanitize the sign up data
+  body('name', 'Name is required')
+    .trim().isLength({ min: 1 }).escape(),
+  body('username', 'Username is required')
+    .trim().isLength({ min: 1 }).escape(),
+  body('password', 'Password is required at least 6 characters')
+    .trim().isLength({ min: 6 }).escape(),
+
+    async (req, res, next) => {
+      // Process the validation errors
+      const errors = validationResult(req);
+  
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          errors: errors.array(),
+          input: req.body
+        });
+      }
+      next();
+    }, 
+
+    asyncHandler(async (req, res, next) => {
+      const user = await User.findOne({ username: req.body.username });
+      if (user) {
+        return res.status(400).json({
+          errors: [{ 
+            location: 'body',
+            param: 'username',
+            value: req.body.username,
+            msg: 'Username already taken' }],
+          input: req.body
+        });
+      }
+      bcrypt.hash(req.body.password, 10, async (err, hashedPassword) => {
+        if (err) {
+          return next(err);
+        }
+        try {
+          const user = new User({
+            name: req.body.name,
+            username: req.body.username,
+            password: hashedPassword,
+          });
+          await user.save();
+          res.status(201).json({user}); 
+        } 
+        catch(err) {
+          return next(err);
+        }
       });
-      const result = await newUser.save();
-      res.status(201).json(result);
-    } catch {
-      return next(err);
-    }
-  });
-});
+    })
+]
 
 exports.userLogin = [
   passport.authenticate("local", {
@@ -74,7 +156,10 @@ exports.userLogin = [
   }),
 
   (req, res) => {
-    if (req.user) res.status(200).json({ message: "Logged in" });
+    if (req.user) {
+      const token = jwt.sign({ id: req.user_id }, process.env.JWT_SECRET);
+      res.status(200).json({ message: "Logged in", user: req.user, token });
+    }
     else res.status(400).json({ message: "Login failed" });
   },
 ];

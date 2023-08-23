@@ -4,10 +4,12 @@ const Comment = require('../models/comment');
 const Like = require('../models/like');
 const mongoose = require('mongoose');
 const { body, validationResult } = require('express-validator');
+const passport = require('passport');
 
 // post a post
 exports.postApost = [
     // check if logged in
+    passport.authenticate('jwt', { session: false }), 
     async (req, res, next) => {
         if (!req.user) {
             return res.status(401).json({ message: "Unauthorized" });
@@ -62,16 +64,27 @@ exports.postApost = [
 ];
 
 // get all posts by user
-exports.getPosts = async (req, res, next) => {
+exports.getPosts = [
+  passport.authenticate('jwt', { session: false }), 
+
+  async (req, res, next) => {
     // Check that the user is logged in
     if (!req.user) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
-    try {
-        const user = await User.findById(req.user.id).populate('posts');
+    const user = await User.findById(req.user.id);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
+    try {
+        const posts = await Post.find({ user: req.user._id })
+                      .populate('user')
+                      .populate({
+                        path: 'comments',
+                        populate: {
+                          path: 'user',
+                        }
+                      });
         res.status(200).json({ posts: user.posts });
     }
     catch(err) {
@@ -79,10 +92,13 @@ exports.getPosts = async (req, res, next) => {
             error: err,
           });
     }
-  }
+  }];
 
 // POST a friend request to another user by id
-exports.sendFriendRequest = async (req, res, next) => {
+exports.sendFriendRequest = [
+  passport.authenticate('jwt', { session: false }),
+
+  async (req, res, next) => {
   if (!req.user) {
       return res.status(401).json({ message: "Not logged in" });
   }
@@ -128,10 +144,13 @@ exports.sendFriendRequest = async (req, res, next) => {
           error: err,
       });
   }
-}
+}];
 
 // Accept a friend request from another user given their userid (POST)
-exports.acceptFriendRequest = async (req, res, next) => {
+exports.acceptFriendRequest = [
+  passport.authenticate('jwt', { session: false }),
+
+  async (req, res, next) => {
     // Check that the user is logged in
     if (!req.user) {
       return res.status(401).json({ message: 'Unauthorized' });
@@ -178,9 +197,12 @@ exports.acceptFriendRequest = async (req, res, next) => {
         error: err,
       });
     }
-}
+}];
 
-exports.giveLike = async (req, res, next) => {
+exports.giveLike = [
+  passport.authenticate('jwt', { session: false }),
+  
+  async (req, res, next) => {
   // Check that the user is logged in
   if (!req.user) {
     return res.status(401).json({ message: 'Unauthorized' });
@@ -224,9 +246,11 @@ exports.giveLike = async (req, res, next) => {
       error: err,
     });
   }
-}
+}];
 
 exports.postAComment = [
+  passport.authenticate('jwt', { session: false }),
+
   // Check that the user is logged in
   async (req, res, next) => {
     if (!req.user) {
@@ -285,5 +309,71 @@ exports.postAComment = [
         });
       }
     }
+  }
+];
+
+exports.getFriendsPosts = [
+  passport.authenticate('jwt', { session: false }), 
+
+  async (req, res, next) => {
+    // Check that the user is logged in
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    // Find and check user by req.user.id
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    try {
+      // populate friends' posts, the posts' users, the posts' comments' users
+      const result = await User.findById(req.user._id)
+      .populate({
+        path: 'friends',
+        populate: {
+          path: 'posts',
+          populate: {
+            path: 'user',
+          }
+        }
+      })
+      .populate({
+        path: 'friends',
+        populate: {
+          path: 'posts',
+          populate: {
+            path: 'comments',
+            populate: {
+              path: 'user',
+            }
+          }
+        }
+      });
+      // all friend posts will be in this array
+      const posts = [];
+      result.friends.map((friend) => {
+        friend.posts.map((post) => {
+            posts.push(post);
+          });
+      });
+
+      posts.sort((a, b) => {
+        // most recent comes first
+        if (a.timestamp > b.timestamp) {
+          return -1;
+        }
+        if (a.timestamp < b.timestamp) {
+          return 1;
+        }
+      })
+      res.status(200).json({ posts: posts });
+    }
+    catch(err) {
+      console.log(err);
+      res.status(502).json({
+        error: err,
+      });
+    }
+
   }
 ];

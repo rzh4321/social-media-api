@@ -21,6 +21,9 @@ router.post('/posts/:postid/give-like', authuserController.giveLike);
 // POST a comment to a post given its postid
 router.post('/posts/:postid/comments', authuserController.postAComment);
 
+// GET a list of posts by the authenticated user's friends
+router.get('/friends-posts', authuserController.getFriendsPosts);
+
 
 
 module.exports = router;
