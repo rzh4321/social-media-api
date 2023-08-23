@@ -96,7 +96,6 @@ exports.getPosts = [
     try {
         const posts = await Post.find({ user: req.user._id })
                       .populate('user')
-                      .populate('image')
                       .populate({
                         path: 'comments',
                         populate: {
@@ -347,15 +346,6 @@ exports.getFriendsPosts = [
       // populate friends' posts, the posts' users, the posts' comments' users,
       // the posts' images
       const result = await User.findById(req.user._id)
-      .populate({
-        path: 'friends',
-        populate: {
-          path: 'posts',
-          populate: {
-            path: 'image',
-          }
-        }
-      })
       .populate({
         path: 'friends',
         populate: {
