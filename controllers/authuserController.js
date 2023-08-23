@@ -60,7 +60,9 @@ exports.postApost = [
         else {
           // post is valid
           try {
-            await image.save();
+            // if theres an image, save it
+            if (image) 
+              await image.save();
             // Save post to database
             await post.save();
             // Push the post to the user
@@ -424,8 +426,8 @@ exports.editProfile = [
   // Validate and sanitize the comment data
   body('name', 'Name is required')
     .trim().isLength({ min: 1 }).escape(),
-  body('profilePicUrl', 'Profile picture is required')
-    .trim().isURL(),
+  // body('profilePicUrl', 'Profile picture is required')
+  //   .trim().isURL(),
 
   // Process after validation and sanitization
   async (req, res, next) => {
@@ -458,4 +460,48 @@ exports.editProfile = [
     }
   }
 
+];
+
+exports.cancelLike = [
+  passport.authenticate('jwt', { session: false }), 
+
+  async (req, res, next) => {
+    // Check that the user is logged in
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    try {
+      // Find the user by req.user.id
+      const user = await User.findById(req.user.id);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Find the post by req.params.postid
+      const post = await Post.findById(req.params.postid);
+      if (!post) {
+        return res.status(404).json({ message: 'Post not found' });
+      }
+
+      // Check if the user has already liked this post
+      if (!post.likes.includes(user.id)) {
+        return res.status(400).json({ message: 'Like not found' });
+      }
+
+      // Remove the user from the post's likes array
+      post.likes.pull(currentUser._id);
+      await post.save();
+      return res.status(201).json({ 
+        message: 'Like cancelled',
+        post
+      });
+
+    } catch (err) {
+      console.log(err);
+      res.status(502).json({
+        error: err,
+      });
+    }
+  },
 ];

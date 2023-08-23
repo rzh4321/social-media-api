@@ -27,6 +27,10 @@ router.get('/friends-posts', authuserController.getFriendsPosts);
 // PUT for the authenticated user to edit its profile name and image
 router.put('/edit-profile', authuserController.editProfile);
 
+// DELETE for the authenticated user to cancel the like of a post given postid
+router.delete('/posts/:postid/cancel-like', authuserController.cancelLike);
+
+
 
 
 module.exports = router;
