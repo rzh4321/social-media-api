@@ -3,13 +3,17 @@ const Post = require('../models/post');
 const Comment = require('../models/comment');
 const Like = require('../models/like');
 const mongoose = require('mongoose');
+const Image = require('../models/image');
 const { body, validationResult } = require('express-validator');
 const passport = require('passport');
+const uploadImage = require('./utils/uploadImage');
 
 // post a post
 exports.postApost = [
+    uploadImage,
     // check if logged in
     passport.authenticate('jwt', { session: false }), 
+
     async (req, res, next) => {
         if (!req.user) {
             return res.status(401).json({ message: "Unauthorized" });
@@ -30,11 +34,21 @@ exports.postApost = [
 
     async (req, res, next) => {
         const errors = validationResult(req);
+        // Create Image object with the accepted uploaded image, or empty if image is rejected
+        let image;
+        if (req.file) {
+          image = new Image({
+            filename: req.file.originalname,
+            contentType: req.file.mimetype,
+            data: req.file.buffer,
+          });
+        }
     
         // Create new Post object
         const post = new Post({
           content: req.body.content,
           user: new mongoose.Types.ObjectId(req.user.id),
+          image,
         });
     
         if (!errors.isEmpty()) {
@@ -46,12 +60,13 @@ exports.postApost = [
         else {
           // post is valid
           try {
+            await image.save();
             // Save post to database
             await post.save();
-            // Push the post to the currentUser
-            const currentUser = await User.findById(req.user.id);
-            currentUser.posts.push(post);
-            await currentUser.save();
+            // Push the post to the user
+            const user = await User.findById(req.user.id);
+            user.posts.push(post);
+            await user.save();
             res.status(201).json({ post });
           } 
           catch (err) {
@@ -79,6 +94,7 @@ exports.getPosts = [
     try {
         const posts = await Post.find({ user: req.user._id })
                       .populate('user')
+                      .populate('image')
                       .populate({
                         path: 'comments',
                         populate: {
@@ -326,8 +342,18 @@ exports.getFriendsPosts = [
       return res.status(404).json({ message: 'User not found' });
     }
     try {
-      // populate friends' posts, the posts' users, the posts' comments' users
+      // populate friends' posts, the posts' users, the posts' comments' users,
+      // the posts' images
       const result = await User.findById(req.user._id)
+      .populate({
+        path: 'friends',
+        populate: {
+          path: 'posts',
+          populate: {
+            path: 'image',
+          }
+        }
+      })
       .populate({
         path: 'friends',
         populate: {

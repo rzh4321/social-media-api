@@ -10,6 +10,7 @@ const { response } = require('../app');
       const posts = await Post.find()
         .sort({ timestamp: -1 })
         .populate('user')
+        .populate('image')
         .populate({
           path: 'comments',
           populate: {
