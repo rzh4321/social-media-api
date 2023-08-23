@@ -7,6 +7,9 @@ const mongoose = require('mongoose');
 const session = require('express-session');
 const passport = require('passport');
 const cors = require('cors');
+const compression = require('compression');
+const helmet = require('helmet');
+const RateLimit = require('express-rate-limit');
 
 const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
@@ -26,6 +29,17 @@ async function main() {
 main().catch(console.error)
 
 var app = express();
+
+app.use(helmet());
+
+// Express-rate-limit setup
+const limiter = RateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 50, 
+});
+app.use(limiter);
+
+app.use(compression());
 
 // Only allow requests from frontend
 // app.use(cors({

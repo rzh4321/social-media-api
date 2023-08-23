@@ -50,11 +50,22 @@ exports.getFriends = async (req, res, next) => {
 // GET a list of posts made by the user with userid
 exports.getPosts = async(req, res, next) => {
     try {
+        // populate posts' users
         const user = await User.findById(req.params.userid).populate({
             path: 'posts',
             populate: {
                 path: 'user',
             }
+            // populate posts' comments, posts' comments' users
+            .populate({
+                path: 'posts',
+                populate: {
+                  path: 'comments',
+                  populate: {
+                    path: 'user',
+                  }
+                }
+              })
         });
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
